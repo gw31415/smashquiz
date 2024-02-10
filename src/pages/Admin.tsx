@@ -44,6 +44,13 @@ export default function Admin() {
     handleMessage(msg);
   })();
 
+  async function undo() {
+    handleMessage(await invoke("undo"));
+  }
+  async function redo() {
+    handleMessage(await invoke("redo"));
+  }
+
   // 選択状態
   const [selected, setSelected] = createSignal<{
     team: string;
@@ -93,12 +100,8 @@ export default function Admin() {
             display: flex;
           `}
         >
-          <button onClick={async () => handleMessage(await invoke("undo"))}>
-            戻る
-          </button>
-          <button onClick={async () => handleMessage(await invoke("redo"))}>
-            進む
-          </button>
+          <button onClick={undo}>戻る</button>
+          <button onClick={redo}>進む</button>
         </div>
         <div
           class={css`
