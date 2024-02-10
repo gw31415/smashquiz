@@ -173,6 +173,76 @@ macro_rules! ok {
     }};
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+struct LogRecord {
+    /// ゲームの状態
+    states: HashMap<String, TeamState>,
+    /// このログが記録された時点でのカーソル位置
+    before: usize,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Log {
+    /// ゲームのルール
+    rule: Rule,
+    /// ゲームの状態の履歴
+    records: Vec<LogRecord>,
+    /// 現在のカーソル位置
+    cursor: usize,
+}
+
+impl Log {
+    fn new(manager: &GameManager<TeamState, Rule>) -> Log {
+        Log {
+            rule: manager.rule.clone(),
+            records: vec![LogRecord {
+                states: manager.teams.clone(),
+                before: 0,
+            }],
+            cursor: 0,
+        }
+    }
+
+    fn commit(&mut self, manager: &GameManager<TeamState, Rule>) {
+        self.records.push(LogRecord {
+            states: manager.teams.clone(),
+            before: self.cursor,
+        });
+        self.cursor = self.records.len() - 1;
+    }
+    fn get_manager(&self) -> GameManager<TeamState, Rule> {
+        GameManager {
+            teams: self.records[self.cursor].states.clone(),
+            rule: self.rule.clone(),
+        }
+    }
+    fn undo(&mut self) -> Option<GameManager<TeamState, Rule>> {
+        self.goto(self.records[self.cursor].before)
+    }
+    fn goto(&mut self, index: usize) -> Option<GameManager<TeamState, Rule>> {
+        if index >= self.records.len() {
+            return None;
+        }
+        self.cursor = index;
+        Some(self.get_manager())
+    }
+    fn redo_list(&self) -> impl IntoIterator<Item = usize> + '_ {
+        self.records
+            .iter()
+            .enumerate()
+            .filter_map(|(index, record)| {
+                if record.before == self.cursor {
+                    Some(index)
+                } else {
+                    None
+                }
+            })
+    }
+    fn redo(&mut self) -> Option<GameManager<TeamState, Rule>> {
+        self.goto(self.redo_list().into_iter().max()?)
+    }
+}
+
 /// 強制的に同期する
 #[tauri::command]
 fn sync(
@@ -188,10 +258,49 @@ fn sync(
     ok!(app_handle, msg)
 }
 
+/// 状態を一つ戻す
+#[tauri::command]
+fn undo(
+    manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
+    log: State<'_, Mutex<Option<Log>>>,
+    app_handle: tauri::AppHandle,
+) -> Result<Message, String> {
+    let mut log = log.lock().unwrap();
+    let log = log.as_mut().ok_or("Game not initialized")?;
+    let m = log.undo().ok_or("No more undo")?;
+    manager.lock().unwrap().replace(m.clone());
+    let GameManager { teams, rule } = m;
+    let msg = Message {
+        update: teams,
+        event: Event::Sync(rule),
+    };
+    ok!(app_handle, msg)
+}
+
+/// 状態を一つ進める
+#[tauri::command]
+fn redo(
+    manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
+    log: State<'_, Mutex<Option<Log>>>,
+    app_handle: tauri::AppHandle,
+) -> Result<Message, String> {
+    let mut log = log.lock().unwrap();
+    let log = log.as_mut().ok_or("Game not initialized")?;
+    let m = log.redo().ok_or("No more redo")?;
+    manager.lock().unwrap().replace(m.clone());
+    let GameManager { teams, rule } = m;
+    let msg = Message {
+        update: teams,
+        event: Event::Sync(rule),
+    };
+    ok!(app_handle, msg)
+}
+
 /// ゲームを初期化する
 #[tauri::command]
 fn initialize(
     manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
+    log: State<'_, Mutex<Option<Log>>>,
     app_handle: tauri::AppHandle,
     names: Vec<String>,
 ) -> Result<Message, String> {
@@ -206,6 +315,11 @@ fn initialize(
         .unwrap()
         .borrow_mut()
         .replace(game_manager.clone());
+    // ログを初期化
+    log.lock()
+        .unwrap()
+        .borrow_mut()
+        .replace(Log::new(&game_manager));
     ok!(app_handle, msg)
 }
 
@@ -213,6 +327,7 @@ fn initialize(
 #[tauri::command]
 fn damage(
     manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
+    log: State<'_, Mutex<Option<Log>>>,
     app_handle: tauri::AppHandle,
     attacker: String,
     correct: bool,
@@ -229,6 +344,12 @@ fn damage(
             success: correct,
         },
     };
+    // ログを更新
+    if let Some(log) = log.lock().unwrap().borrow_mut().as_mut() {
+        log.commit(manager);
+    } else {
+        log.lock().unwrap().borrow_mut().replace(Log::new(manager));
+    }
     ok!(app_handle, msg)
 }
 
@@ -236,6 +357,7 @@ fn damage(
 #[tauri::command]
 fn smash(
     manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
+    log: State<'_, Mutex<Option<Log>>>,
     app_handle: tauri::AppHandle,
     attacker: String,
     correct: bool,
@@ -252,14 +374,23 @@ fn smash(
             success: correct,
         },
     };
+    // ログを更新
+    if let Some(log) = log.lock().unwrap().borrow_mut().as_mut() {
+        log.commit(manager);
+    } else {
+        log.lock().unwrap().borrow_mut().replace(Log::new(manager));
+    }
     ok!(app_handle, msg)
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![initialize, damage, smash, sync,])
+        .invoke_handler(tauri::generate_handler![
+            initialize, damage, smash, sync, undo, redo
+        ])
         .setup(|app| {
             app.manage(Mutex::new(Option::<GameManager<TeamState, Rule>>::None));
+            app.manage(Mutex::new(Option::<Log>::None));
             Ok(())
         })
         .run(tauri::generate_context!())

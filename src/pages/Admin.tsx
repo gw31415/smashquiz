@@ -45,17 +45,17 @@ export default function Admin() {
   })();
 
   // 選択状態
-  const [selected, setSelected] = createSignal<
-    {
-      team: string;
-      actor: "smash" | "damage";
-    } | null
-  >(null);
+  const [selected, setSelected] = createSignal<{
+    team: string;
+    actor: "smash" | "damage";
+  } | null>(null);
 
   function Submit(props: { correct: boolean; disabled: boolean }) {
     return (
       <button
         class={css({
+          fontSize: 30,
+          color: "white",
           backgroundColor: props.correct ? "#F44336" : "#283593",
           [":disabled"]: {
             backgroundColor: "#E0E0E0",
@@ -79,19 +79,27 @@ export default function Admin() {
   }
 
   return (
-    <div
-      class={css`
-        color-scheme: light;
-        height: 100%;
-        display: grid;
-        grid-template-rows: 1fr repeat(2, 60px);
-        button {
-          font-size: 30px;
-          color: white;
-        }
-      `}
-    >
-      <Show when={game()} fallback={<div>Loading</div>}>
+    <Show when={game()} fallback={<div>Loading</div>}>
+      <div
+        class={css`
+          color-scheme: light;
+          height: 100%;
+          display: grid;
+          grid-template-rows: 4ex 1fr repeat(2, 60px);
+        `}
+      >
+        <div
+          class={css`
+            display: flex;
+          `}
+        >
+          <button onClick={async () => handleMessage(await invoke("undo"))}>
+            戻る
+          </button>
+          <button onClick={async () => handleMessage(await invoke("redo"))}>
+            進む
+          </button>
+        </div>
         <div
           class={css`
             overflow-y: scroll;
@@ -201,7 +209,7 @@ export default function Admin() {
         </div>
         <Submit correct={true} disabled={selected() === null} />
         <Submit correct={false} disabled={selected() === null} />
-      </Show>
-    </div>
+      </div>
+    </Show>
   );
 }
