@@ -1,7 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{borrow::BorrowMut, collections::HashMap, sync::Mutex};
+use rand_distr::{Distribution, Normal};
+use std::{borrow::BorrowMut, collections::HashMap, ops::Add, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
 use smashquiz::GameManager;
@@ -25,11 +26,36 @@ struct TeamState {
 #[serde(rename_all = "camelCase")]
 struct Rule {
     /// ダメージ攻撃が成功した場合のダメージ
-    pub damage_if_correct: f64,
+    pub damage_if_correct: Damage,
     /// ダメージ/スマッシュ攻撃が失敗した場合の反動ダメージ
-    pub damage_if_incorrect: f64,
+    pub damage_if_incorrect: Damage,
     /// ストック制がある場合のルール
     pub stock: Option<StockRule>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct Damage {
+    /// 平均
+    pub mean: f64,
+    /// バラつきの標準偏差
+    pub std_dev: f64,
+}
+
+impl Add<f64> for &Damage {
+    type Output = f64;
+
+    fn add(self, rhs: f64) -> Self::Output {
+        let mut distr = Normal::new(self.mean, self.std_dev)
+            .unwrap()
+            .sample(&mut rand::thread_rng());
+        if distr > self.mean {
+            distr = self.mean;
+        } else if distr < 0.0 {
+            distr = 0.0;
+        }
+        distr + rhs
+    }
 }
 
 /// ストック制のルール
@@ -45,8 +71,14 @@ struct StockRule {
 impl Default for Rule {
     fn default() -> Self {
         Rule {
-            damage_if_correct: 0.1,
-            damage_if_incorrect: 0.2,
+            damage_if_correct: Damage {
+                mean: 0.1,
+                std_dev: 0.05,
+            },
+            damage_if_incorrect: Damage {
+                mean: 0.2,
+                std_dev: 0.1,
+            },
             stock: None,
         }
     }
@@ -64,12 +96,12 @@ impl smashquiz::Rule<TeamState> for Rule {
 
     fn damage_if_correct(&self, attacked: &mut HashMap<String, TeamState>) {
         for team in attacked.values_mut() {
-            team.damage += self.damage_if_correct;
+            team.damage = &self.damage_if_correct + team.damage;
         }
     }
 
     fn damage_if_incorrect(&self, attacker: &mut TeamState) {
-        attacker.damage += self.damage_if_incorrect;
+        attacker.damage = &self.damage_if_incorrect + attacker.damage;
     }
 
     fn do_smash(&self, attacker: &mut TeamState, attacked: &mut HashMap<String, TeamState>) {
@@ -85,7 +117,11 @@ impl smashquiz::Rule<TeamState> for Rule {
     }
 
     fn team_is_active(&self, attacker: &TeamState) -> bool {
-        if let Some(StockRule { count: stock, can_steal }) = self.stock {
+        if let Some(StockRule {
+            count: stock,
+            can_steal,
+        }) = self.stock
+        {
             if can_steal {
                 stock - attacker.down + attacker.up > 0
             } else {
@@ -221,9 +257,7 @@ fn smash(
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            initialize, damage, smash, sync,
-        ])
+        .invoke_handler(tauri::generate_handler![initialize, damage, smash, sync,])
         .setup(|app| {
             app.manage(Mutex::new(Option::<GameManager<TeamState, Rule>>::None));
             Ok(())

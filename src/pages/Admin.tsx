@@ -178,6 +178,7 @@ export default function Admin() {
                         {Intl.NumberFormat("ja", {
                           style: "percent",
                           maximumSignificantDigits: 3,
+                          minimumSignificantDigits: 3,
                         }).format(state.damage)}
                       </div>
                       <div>＋{state.up}</div>

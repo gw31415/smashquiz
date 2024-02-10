@@ -1,7 +1,7 @@
 import { css } from "@emotion/css";
 import { createSignal, For, Show } from "solid-js";
 
-import type { Message, Game } from "../types";
+import type { Game, Message } from "../types";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api";
 
@@ -84,6 +84,7 @@ export default function ScoreBoard() {
                   {Intl.NumberFormat("ja", {
                     style: "percent",
                     maximumSignificantDigits: 3,
+                    minimumSignificantDigits: 3,
                   }).format(state.damage)}
                 </div>
                 <Show
