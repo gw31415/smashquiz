@@ -1,0 +1,15 @@
+@import "./vendor/reset.scss";
+
+html,
+body,
+main,
+#root {
+  height: 100%;
+  cursor: default;
+  overflow: hidden;
+  font-family: "M PLUS 1 Code Variable", sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
