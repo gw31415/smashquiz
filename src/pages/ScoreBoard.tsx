@@ -14,6 +14,15 @@ const damageColorScale = chroma
   .scale(["white", "#ff4d00", "red", "#a70000"])
   .mode("lab");
 
+const colorPalette = [
+  "#4ABF4F",
+  "#1FCBCB",
+  "#E53935",
+  "#DCE775",
+  "#B66969",
+  "#9C27B0",
+];
+
 export default function ScoreBoard() {
   // null は未初期化
   const [game, setGame] = createSignal<Game | null>(null);
@@ -79,9 +88,20 @@ export default function ScoreBoard() {
           display: grid;
         `}
       >
-        <For each={Object.entries(game()!.states ?? {})}>
-          {([name, state]) => {
-            return <TeamRow name={name} state={state} rule={game()!.rule} />;
+        <For
+          each={Object.entries(game()!.states ?? {}).sort(
+            ([keya, _], [keyb, __]) => keya.localeCompare(keyb),
+          )}
+        >
+          {([name, state], i) => {
+            return (
+              <TeamRow
+                name={name}
+                state={state}
+                rule={game()!.rule}
+                color={colorPalette[i() % colorPalette.length]}
+              />
+            );
           }}
         </For>
       </div>
@@ -89,7 +109,12 @@ export default function ScoreBoard() {
   );
 }
 
-function TeamRow(props: { name: string; state: TeamState; rule: Rule }) {
+function TeamRow(props: {
+  name: string;
+  state: TeamState;
+  rule: Rule;
+  color: string;
+}) {
   const stock = props.rule.stock;
   const doubleHalfStyle = css`
     display: grid;
@@ -106,6 +131,7 @@ function TeamRow(props: { name: string; state: TeamState; rule: Rule }) {
         font-size: 4rem;
         border-top: 1px solid white;
         border-bottom: 1px solid white;
+        background: linear-gradient(to bottom right, ${props.color} 30%, transparent);
       `,
         doubleHalfStyle,
       )}

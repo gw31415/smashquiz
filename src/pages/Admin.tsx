@@ -115,7 +115,11 @@ export default function Admin() {
             overflow-y: scroll;
           `}
         >
-          <For each={Object.entries(game()!.states)}>
+          <For
+            each={Object.entries(game()!.states).sort(([keya, _], [keyb, __]) =>
+              keya.localeCompare(keyb),
+            )}
+          >
             {([name, state]) => {
               function Selection(props: { actor: "damage" | "smash" }) {
                 const isSelected = () =>
