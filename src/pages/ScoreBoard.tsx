@@ -8,7 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api";
 import chroma from "chroma-js";
 import { FaSolidSkull } from "solid-icons/fa";
-import { AiFillHeart } from "solid-icons/ai";
+import { AiFillHeart, AiFillStar } from "solid-icons/ai";
 
 const damageColorScale = chroma
   .scale(["white", "#ff4d00", "red", "#a70000"])
@@ -18,7 +18,7 @@ const colorPalette = [
   "#4ABF4F",
   "#1FCBCB",
   "#E53935",
-  "#DCE775",
+  "#C0CA33",
   "#B66969",
   "#9C27B0",
 ];
@@ -179,7 +179,7 @@ function TeamRow(props: {
             when={stock}
             fallback={
               <>
-                <LiveRow count={props.state.up} mode="live" />
+                <LiveRow count={props.state.up} mode="win" />
                 <LiveRow count={props.state.down} mode="death" />
               </>
             }
@@ -191,7 +191,7 @@ function TeamRow(props: {
                     ? stock!.count + props.state.up - props.state.down
                     : stock!.count - props.state.down
                 }
-                mode="live"
+                mode="life"
               />
             </>
           </Show>
@@ -201,9 +201,14 @@ function TeamRow(props: {
   );
 }
 
-function LiveRow(props: { count: number; mode: "live" | "death" }) {
+function LiveRow(props: { count: number; mode: "life" | "win" | "death" }) {
   const MAX_COUNT = 8;
-  const Icon = props.mode === "live" ? AiFillHeart : FaSolidSkull;
+  const Icon =
+    props.mode === "life"
+      ? () => <AiFillHeart color="#E91E63" />
+      : props.mode === "win"
+        ? () => <AiFillStar color="#FDD835" />
+        : () => <FaSolidSkull color="#E0E0E0" />;
   return (
     <div
       class={css`
