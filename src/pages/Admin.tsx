@@ -109,6 +109,19 @@ export default function Admin() {
         >
           <button onClick={undo}>戻る</button>
           <button onClick={redo}>進む</button>
+          <input
+            type="range"
+            min="5"
+            max="30"
+            onChange={(e) => {
+              const size = parseInt(e.target.value);
+              invoke("ui_update", {
+                uiConfig: {
+                  fontSize: size,
+                },
+              });
+            }}
+          />
         </div>
         <div
           class={css`

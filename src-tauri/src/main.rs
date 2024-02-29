@@ -153,6 +153,22 @@ enum Event {
     Sync(Rule),
     /// 解答
     Answer { actor_type: Actor, success: bool },
+    /// UIの更新
+    UiUpdate(UiConfig),
+}
+
+/// UIの設定
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct UiConfig {
+    /// Body要素のフォントサイズ
+    font_size: f64,
+}
+
+impl Default for UiConfig {
+    fn default() -> Self {
+        UiConfig { font_size: 12.0 }
+    }
 }
 
 /// ウィンドウ間でやり取りするメッセージ
@@ -181,6 +197,7 @@ struct LogRecord {
     before: usize,
 }
 
+/// アンドゥ/リドゥのためのログ
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Log {
     /// ゲームのルール
@@ -254,6 +271,16 @@ fn sync(
     let msg = Message {
         update: manager.teams.clone(),
         event: Event::Sync(manager.rule.clone()),
+    };
+    ok!(app_handle, msg)
+}
+
+/// UIの設定を更新する
+#[tauri::command]
+fn ui_update(app_handle: tauri::AppHandle, ui_config: UiConfig) -> Result<Message, String> {
+    let msg = Message {
+        update: HashMap::new(),
+        event: Event::UiUpdate(ui_config),
     };
     ok!(app_handle, msg)
 }
@@ -386,7 +413,7 @@ fn smash(
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            initialize, damage, smash, sync, undo, redo
+            initialize, damage, smash, sync, undo, redo, ui_update,
         ])
         .setup(|app| {
             app.manage(Mutex::new(Option::<GameManager<TeamState, Rule>>::None));

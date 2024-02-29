@@ -41,7 +41,10 @@ export default function ScoreBoard() {
         rule,
         states: msg.update,
       });
-    } else {
+    } else if (msg.event.hasOwnProperty("uiUpdate")) {
+      const config = msg.event.uiUpdate;
+      document.getElementsByTagName("html")[0].style.fontSize = `${config.fontSize}px`;
+    } else if (msg.event.hasOwnProperty("answer")) {
       // 一部の状態を更新
       const g = game();
       if (g === null) {
