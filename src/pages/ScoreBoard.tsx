@@ -1,9 +1,18 @@
 import { css } from "@emotion/css";
 import { createSignal, For, Show } from "solid-js";
+import "@fontsource/russo-one";
+import "@fontsource/rocknroll-one";
 
-import type { Game, Message } from "../types";
+import type { Game, Message, Rule, TeamState } from "../types";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api";
+import chroma from "chroma-js";
+import { FaSolidSkull } from "solid-icons/fa";
+import { AiFillHeart } from "solid-icons/ai";
+
+const damageColorScale = chroma
+  .scale(["white", "#ff4d00", "red", "#a70000"])
+  .mode("lab");
 
 export default function ScoreBoard() {
   // null は未初期化
@@ -38,6 +47,7 @@ export default function ScoreBoard() {
     }
   }
   listen<Message>("message", (e) => handleMessage(e.payload));
+  invoke<Message>("sync").then(handleMessage);
 
   return (
     <Show
@@ -53,6 +63,7 @@ export default function ScoreBoard() {
             justify-content: center;
             align-items: center;
             font-size: 100px;
+            font-family: "RocknRoll One";
           `}
         >
           <div>準備中……</div>
@@ -70,46 +81,125 @@ export default function ScoreBoard() {
       >
         <For each={Object.entries(game()!.states ?? {})}>
           {([name, state]) => {
-            const rule = game()!.rule;
-            const stock = rule.stock;
-            return (
-              <div
-                class={css`
-                  display: grid;
-                  grid-template-columns: 1fr repeat(3, 80px);
-                `}
-              >
-                <div>{name}</div>
-                <div>
-                  {Intl.NumberFormat("ja", {
-                    style: "percent",
-                    maximumSignificantDigits: 3,
-                    minimumSignificantDigits: 3,
-                  }).format(state.damage)}
-                </div>
-                <Show
-                  when={stock}
-                  fallback={
-                    <>
-                      <div>＋{state.up}</div>
-                      <div>－{state.down}</div>
-                    </>
-                  }
-                >
-                  <>
-                    <div>
-                      残機数：
-                      {stock!.canSteal
-                        ? stock!.count + state.up - state.down
-                        : stock!.count - state.down}
-                    </div>
-                  </>
-                </Show>
-              </div>
-            );
+            return <TeamRow name={name} state={state} rule={game()!.rule} />;
           }}
         </For>
       </div>
     </Show>
+  );
+}
+
+function TeamRow(props: { name: string; state: TeamState; rule: Rule }) {
+  const stock = props.rule.stock;
+  const doubleHalfStyle = css`
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 2rem;
+  `;
+  return (
+    <div
+      class={css(
+        `
+        font-family: "RocknRoll One";
+        font-size: 4rem;
+        border-top: 1px solid white;
+        border-bottom: 1px solid white;
+      `,
+        doubleHalfStyle,
+      )}
+    >
+      <div
+        class={css`
+          margin-left: 1.5rem;
+        `}
+      >
+        {props.name}
+      </div>
+      <div class={doubleHalfStyle}>
+        <div
+          class={css`
+            -webkit-text-stroke: 4px #1e1e1e;
+            text-stroke: 3px #1e1e1e;
+            font-family: "Russo One";
+            font-size: 8rem;
+            text-align: right;
+            color: ${damageColorScale(Math.min(props.state.damage, 1)).hex()};
+          `}
+        >
+          <i>
+            {(100 * props.state.damage).toPrecision(3)}
+            <span
+              class={css`
+                font-size: 70%;
+                -webkit-text-stroke: 2px #1e1e1e;
+                text-stroke: 2px #1e1e1e;
+                margin-left: 0.15em;
+              `}
+            >
+              %
+            </span>
+          </i>
+        </div>
+        <div
+          class={css`
+            gap: 2rem;
+            display: grid;
+            template-grid-rows: 1fr 1fr;
+          `}
+        >
+          <Show
+            when={stock}
+            fallback={
+              <>
+                <LiveRow count={props.state.up} mode="live" />
+                <LiveRow count={props.state.down} mode="death" />
+              </>
+            }
+          >
+            <>
+              <LiveRow
+                count={
+                  stock!.canSteal
+                    ? stock!.count + props.state.up - props.state.down
+                    : stock!.count - props.state.down
+                }
+                mode="live"
+              />
+            </>
+          </Show>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveRow(props: { count: number; mode: "live" | "death" }) {
+  const MAX_COUNT = 8;
+  const Icon = props.mode === "live" ? AiFillHeart : FaSolidSkull;
+  return (
+    <div
+      class={css`
+        display: flex;
+        align-items: center;
+        font-size: 3rem;
+        height: 2rem;
+        gap: 0.2rem;
+      `}
+    >
+      <Show
+        when={props.count > MAX_COUNT}
+        fallback={
+          <For each={Array.from({ length: props.count }, (_, i) => i)}>
+            {() => <Icon />}
+          </For>
+        }
+      >
+        <Icon />
+        <div>×</div>
+        <div>{props.count}</div>
+      </Show>
+    </div>
   );
 }

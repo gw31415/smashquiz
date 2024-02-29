@@ -14,12 +14,17 @@
   "dependencies": {
     "@emotion/css": "^11.11.2",
     "@fontsource-variable/m-plus-1-code": "^5.0.17",
+    "@fontsource/rocknroll-one": "^5.0.11",
+    "@fontsource/russo-one": "^5.0.18",
     "@solidjs/router": "^0.11.5",
     "@tauri-apps/api": "^1.5.2",
+    "chroma-js": "^2.4.2",
+    "solid-icons": "^1.1.0",
     "solid-js": "^1.7.8"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.5.8",
+    "@types/chroma-js": "^2.4.4",
     "sass": "^1.70.0",
     "typescript": "^5.0.2",
     "vite": "^5.0.0",

@@ -6,7 +6,7 @@ export interface TeamState {
   active: boolean;
 }
 
-export type Teams = { [key: string]: TeamState };
+export type Teams = { [teamName: string]: TeamState };
 
 export interface Message {
   update: Teams;

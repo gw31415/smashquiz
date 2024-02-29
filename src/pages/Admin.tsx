@@ -4,7 +4,14 @@ import { createSignal, For, Show } from "solid-js";
 
 import type { Game, Message } from "../types";
 
-const TEAMS = ["Arsenal", "Aston Villa", "Brentford", "Brighton", "Burnley"];
+const TEAMS = [
+  "宇宙のモフモフ探検隊",
+  "カエルの革命家たち",
+  "時速5kmのスナイパー",
+  "パンダの逆襲",
+  "未確認飛行ニンジン",
+  "秘密結社クワガタムシ",
+];
 
 export default function Admin() {
   const [game, setGame] = createSignal<Game>();
