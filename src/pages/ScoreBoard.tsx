@@ -10,19 +10,11 @@ import chroma from "chroma-js";
 import { FaSolidSkull } from "solid-icons/fa";
 import { AiFillHeart, AiFillStar } from "solid-icons/ai";
 import { appWindow } from "@tauri-apps/api/window";
+import { colorPalette } from "../res/values/colors";
 
 const damageColorScale = chroma
   .scale(["white", "#ff4d00", "red", "#a70000"])
   .mode("lab");
-
-const colorPalette = [
-  "#4ABF4F",
-  "#1FCBCB",
-  "#E53935",
-  "#C0CA33",
-  "#B66969",
-  "#9C27B0",
-];
 
 export default function ScoreBoard() {
   // null は未初期化
