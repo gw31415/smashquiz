@@ -1,8 +1,9 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { css } from "@emotion/css";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, onMount, Show } from "solid-js";
 
-import type { Game, Message } from "../types";
+import type { Game, Message, Rule } from "../types";
+import { appWindow, WebviewWindow } from "@tauri-apps/api/window";
 
 const TEAMS = [
   "宇宙のモフモフ探検隊",
@@ -13,10 +14,32 @@ const TEAMS = [
   "秘密結社クワガタムシ",
 ];
 
+const selectCss = css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  letter-spacing: 4px;
+  border: solid 1px black;
+`;
+
 export default function Admin() {
-  const [game, setGame] = createSignal<Game>();
+  const [game, setGame] = createSignal<Game | null>(null);
+
+  onMount(() => {
+    appWindow.onCloseRequested(async () => {
+      const view = WebviewWindow.getByLabel("view");
+      if (view) {
+        await view.setClosable(true);
+        await view.close();
+      }
+    });
+  });
+
   function handleMessage(msg: Message) {
-    if (msg.event.hasOwnProperty("initialize")) {
+    if (msg.event as String === "reset") {
+      setGame(null);
+    } else if (msg.event.hasOwnProperty("initialize")) {
       const rule = msg.event.initialize;
       // 全ての状態を更新
       setGame({
@@ -45,17 +68,21 @@ export default function Admin() {
     }
   }
 
-  // ゲームの初期化
-  (async function() {
-    const msg: Message = await invoke("initialize", { names: TEAMS });
-    handleMessage(msg);
-  })();
+  async function reset() {
+    handleMessage(await invoke("reset"));
+  }
 
   async function undo() {
     handleMessage(await invoke("undo"));
   }
   async function redo() {
     handleMessage(await invoke("redo"));
+  }
+
+  // ゲームの初期化
+  async function initialize(args: { rule: Rule, names: string[] }) {
+    const msg: Message = await invoke("initialize", args);
+    handleMessage(msg);
   }
 
   // 選択状態
@@ -93,7 +120,90 @@ export default function Admin() {
   }
 
   return (
-    <Show when={game()} fallback={<div>Loading</div>}>
+    <Show when={game()} fallback={<div>
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        function getValue(name: string): string {
+          return form.get(name) as string;
+        }
+        function getFloatValue(name: string): number {
+          const str = getValue(name);
+          return parseFloat(str);
+        }
+        function getCheckboxValue(name: string): boolean {
+          const str = getValue(name);
+          return str === "on";
+        }
+        const names = getValue("names").split("\n").map((s) => s.trim()).filter((s) => s.length > 0);
+        const rule: Rule = {
+          damageIfCorrect: {
+            mean: getFloatValue("damage_if_correct_mean") / 100,
+            stdDev: getFloatValue("damage_if_correct_std_dev") / 100,
+          },
+          damageIfIncorrect: {
+            mean: getFloatValue("damage_if_incorrect_mean") / 100,
+            stdDev: getFloatValue("damage_if_incorrect_std_dev") / 100,
+          },
+          stock: getCheckboxValue("stock_enabled") ? {
+            count: getFloatValue("stock_count"),
+            canSteal: getCheckboxValue("stock_steal"),
+          } : undefined,
+        };
+        initialize({ rule, names: names });
+      }}>
+        <div>
+          <label>
+            チーム名:
+            <textarea name="names" value={TEAMS.join("\n")}></textarea>
+          </label>
+        </div>
+        <div>
+          <label>
+            成功ダメージの中央値(%):
+            <input type="number" name="damage_if_correct_mean" value="10" min="0" max="100" />
+          </label>
+        </div>
+        <div>
+          <label>
+            成功ダメージの標準偏差(%):
+            <input type="number" name="damage_if_correct_std_dev" value="5" min="0" max="100" />
+          </label>
+        </div>
+        <div>
+          <label>
+            失敗ダメージの中央値(%):
+            <input type="number" name="damage_if_incorrect_mean" value="20" min="0" max="100" />
+          </label>
+        </div>
+        <div>
+          <label>
+            失敗ダメージの標準偏差(%):
+            <input type="number" name="damage_if_incorrect_std_dev" value="10" min="0" max="100" />
+          </label>
+        </div>
+        <div>
+          <label>
+            ストック:
+            <input type="checkbox" name="stock_enabled" />
+          </label>
+        </div>
+        <div>
+          <label>
+            ストック数:
+            <input type="number" name="stock_count" value="5" min="1" max="20" />
+          </label>
+        </div>
+        <div>
+          <label>
+            スマッシュ成功時にストックを奪う:
+            <input type="checkbox" name="stock_steal" />
+          </label>
+        </div>
+        <button type="submit">開始</button>
+      </form>
+
+    </div>}>
       <div
         class={css`
           color-scheme: light;
@@ -122,6 +232,7 @@ export default function Admin() {
               });
             }}
           />
+          <button onClick={reset}>リセット</button>
         </div>
         <div
           class={css`
@@ -140,14 +251,8 @@ export default function Admin() {
                   selected()?.actor === props.actor;
                 return (
                   <div
-                    class={css`
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
+                    class={css(selectCss, css`
                       cursor: pointer;
-                      font-size: 24px;
-                      letter-spacing: 4px;
-                      border: solid 1px black;
                       &.damage {
                         background-color: #a1887f;
                         &.selected {
@@ -165,7 +270,7 @@ export default function Admin() {
                       &:hover {
                         opacity: 0.8;
                       }
-                    `}
+                    `)}
                     classList={{
                       selected: isSelected(),
                       [props.actor]: true,
@@ -226,8 +331,14 @@ export default function Admin() {
                       grid-template-columns: 1fr 1fr;
                     `}
                   >
-                    <Selection actor="damage" />
-                    <Selection actor="smash" />
+                    <Show when={
+                      (!game()!.rule.stock) || (game()!.rule.stock && (game()!.rule.stock!.canSteal ? state.up : 0) + game()!.rule.stock!.count > state.down)
+                    } fallback={
+                      <div class={selectCss}>DEAD</div>
+                    }>
+                      <Selection actor="damage" />
+                      <Selection actor="smash" />
+                    </Show>
                   </div>
                 </div>
               );

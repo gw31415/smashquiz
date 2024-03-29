@@ -1,5 +1,5 @@
 import { css } from "@emotion/css";
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, onMount, Show } from "solid-js";
 import "@fontsource/russo-one";
 import "@fontsource/rocknroll-one";
 
@@ -9,6 +9,7 @@ import { invoke } from "@tauri-apps/api";
 import chroma from "chroma-js";
 import { FaSolidSkull } from "solid-icons/fa";
 import { AiFillHeart, AiFillStar } from "solid-icons/ai";
+import { appWindow } from "@tauri-apps/api/window";
 
 const damageColorScale = chroma
   .scale(["white", "#ff4d00", "red", "#a70000"])
@@ -26,8 +27,15 @@ const colorPalette = [
 export default function ScoreBoard() {
   // null は未初期化
   const [game, setGame] = createSignal<Game | null>(null);
+  onMount(() => {
+    window.addEventListener("click", async () => {
+      appWindow.setFullscreen(!await appWindow.isFullscreen());
+    })
+  });
   async function handleMessage(msg: Message) {
-    if (msg.event.hasOwnProperty("initialize")) {
+    if (msg.event as String === "reset") {
+      setGame(null);
+    } else if (msg.event.hasOwnProperty("initialize")) {
       const rule = msg.event.initialize;
       // 全ての状態を更新
       setGame({
@@ -135,6 +143,7 @@ function TeamRow(props: {
         border-top: 1px solid white;
         border-bottom: 1px solid white;
         background: linear-gradient(to bottom right, ${props.color} 30%, transparent);
+        opacity: ${!props.rule.stock || (props.rule.stock && (props.rule.stock.canSteal ? props.state.up : 0) + props.rule.stock.count > props.state.down) ? 1 : 0.3};
       `,
         doubleHalfStyle,
       )}

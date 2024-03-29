@@ -3,7 +3,6 @@ export interface TeamState {
   damage: number;
   up: number;
   down: number;
-  active: boolean;
 }
 
 export type Teams = { [teamName: string]: TeamState };
@@ -23,5 +22,13 @@ export interface Rule {
   stock?: {
     count: number;
     canSteal: boolean;
+  };
+  damageIfCorrect: {
+    mean: number;
+    stdDev: number;
+  };
+  damageIfIncorrect: {
+    mean: number;
+    stdDev: number;
   };
 }

@@ -147,6 +147,8 @@ enum Actor {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 enum Event {
+    /// リセット
+    Reset,
     /// 初期化(ゲームの開始)
     Initialize(Rule),
     /// 強制的にViewを同期する
@@ -260,6 +262,20 @@ impl Log {
     }
 }
 
+/// リセットする
+#[tauri::command]
+fn reset(
+    manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
+    app_handle: tauri::AppHandle
+) -> Result<Message, String> {
+    manager.lock().unwrap().take();
+    let msg = Message {
+        update: HashMap::new(),
+        event: Event::Reset,
+    };
+    ok!(app_handle, msg)
+}
+
 /// 強制的に同期する
 #[tauri::command]
 fn sync(
@@ -330,8 +346,9 @@ fn initialize(
     log: State<'_, Mutex<Option<Log>>>,
     app_handle: tauri::AppHandle,
     names: Vec<String>,
+    rule: Option<Rule>,
 ) -> Result<Message, String> {
-    let rule = Rule::default();
+    let rule = rule.unwrap_or_default();
     let game_manager = smashquiz::GameManager::new(rule.clone(), names);
     let msg = Message {
         update: game_manager.teams.clone(),
@@ -413,7 +430,7 @@ fn smash(
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            initialize, damage, smash, sync, undo, redo, ui_update,
+            initialize, damage, smash, sync, undo, redo, ui_update, reset,
         ])
         .setup(|app| {
             app.manage(Mutex::new(Option::<GameManager<TeamState, Rule>>::None));
