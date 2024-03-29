@@ -96,7 +96,9 @@ impl smashquiz::Rule<TeamState> for Rule {
 
     fn damage_if_correct(&self, attacked: &mut HashMap<String, TeamState>) {
         for team in attacked.values_mut() {
-            team.damage = &self.damage_if_correct + team.damage;
+            if self.team_is_active(team) {
+                team.damage = &self.damage_if_correct + team.damage;
+            }
         }
     }
 
@@ -107,8 +109,10 @@ impl smashquiz::Rule<TeamState> for Rule {
     fn do_smash(&self, attacker: &mut TeamState, attacked: &mut HashMap<String, TeamState>) {
         attacker.up += attacked.len();
         for team in attacked.values_mut() {
-            team.down += 1;
-            team.damage = 0.0;
+            if self.team_is_active(team) {
+                team.down += 1;
+                team.damage = 0.0;
+            }
         }
     }
 
@@ -266,7 +270,7 @@ impl Log {
 #[tauri::command]
 fn reset(
     manager: State<'_, Mutex<Option<GameManager<TeamState, Rule>>>>,
-    app_handle: tauri::AppHandle
+    app_handle: tauri::AppHandle,
 ) -> Result<Message, String> {
     manager.lock().unwrap().take();
     let msg = Message {
