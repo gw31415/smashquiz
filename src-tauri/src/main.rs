@@ -126,11 +126,11 @@ impl smashquiz::Rule<TeamState> for Rule {
             can_steal,
         }) = self.stock
         {
-            if can_steal {
-                stock - attacker.down + attacker.up > 0
+            (if can_steal {
+                stock + attacker.up
             } else {
-                stock - attacker.down > 0
-            }
+                stock
+            }) > attacker.down
         } else {
             true
         }
