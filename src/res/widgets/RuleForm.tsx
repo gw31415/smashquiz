@@ -1,4 +1,4 @@
-import { createUniqueId, onMount } from "solid-js";
+import { createUniqueId } from "solid-js";
 import type { Rule } from "../../types";
 
 interface FormValues {
@@ -74,26 +74,6 @@ export function RuleForm(props: {
 }) {
   const { form } = saveAndGetGameRules();
   const formid = createUniqueId();
-  const stockruleId = createUniqueId();
-
-  onMount(() => {
-    document
-      .querySelectorAll(`#${formid} input[name=game_mode]`)
-      .forEach((input) => {
-        function update() {
-          const stockrule = document.getElementById(
-            stockruleId,
-          ) as HTMLFieldSetElement;
-          if ((input as HTMLInputElement).value === "stock") {
-            stockrule.disabled = false;
-          } else {
-            stockrule.disabled = true;
-          }
-        }
-        update();
-        input.addEventListener("change", update);
-      });
-  });
   return (
     <form
       id={formid}
@@ -113,6 +93,7 @@ export function RuleForm(props: {
           ) as HTMLInputElement;
           return input.checked;
         }
+
         const { rule, names } = saveAndGetGameRules({
           names: getValue("names")
             .split("\n")
@@ -129,6 +110,7 @@ export function RuleForm(props: {
           stock_count: getFloatValue("stock_count"),
           stock_steal: getCheckboxValue("stock_steal"),
         });
+
         props.onSubmit(rule, names);
       }}
     >
@@ -219,7 +201,7 @@ export function RuleForm(props: {
             ストック制
           </label>
         </div>
-        <fieldset id={stockruleId}>
+        <fieldset>
           <legend>ストック制ルール設定</legend>
           <div>
             <label>
