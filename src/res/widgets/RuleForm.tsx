@@ -1,47 +1,76 @@
 import type { Rule } from "../../types";
 
-const conf: GameConfig = {
-  rule: {
-    damageIfCorrect: {
-      mean: 0.1,
-      stdDev: 0.05,
-    },
-    damageIfIncorrect: {
-      mean: 0.2,
-      stdDev: 0.1,
-    },
-    stock: {
-      count: 5,
-      canSteal: false,
-    },
-  },
-  names: [
-    "宇宙のモフモフ探検隊",
-    "カエルの革命家たち",
-    "時速5kmのスナイパー",
-    "パンダの逆襲",
-    "未確認飛行ニンジン",
-    "秘密結社クワガタムシ",
-  ],
-};
+interface FormValues {
+  names: string[];
+  damage_if_correct_mean: number;
+  damage_if_correct_std_dev: number;
+  damage_if_incorrect_mean: number;
+  damage_if_incorrect_std_dev: number;
+  stock_enabled: boolean;
+  stock_count: number;
+  stock_steal: boolean;
+}
 
-interface GameConfig {
+function saveAndGetGameRules(values: FormValues | undefined = undefined): {
+  form: FormValues;
   rule: Rule;
   names: string[];
+} {
+  const form: FormValues = {
+    ...{
+      damage_if_correct_mean: 0.1,
+      damage_if_correct_std_dev: 0.05,
+      damage_if_incorrect_mean: 0.2,
+      damage_if_incorrect_std_dev: 0.1,
+      stock_enabled: true,
+      stock_count: 5,
+      stock_steal: false,
+    },
+    ...(() => {
+      try {
+        return JSON.parse(
+          localStorage.getItem("gameConfig") ?? "",
+        ) as FormValues;
+      } catch {
+        return {} as FormValues;
+      }
+    })(),
+    ...(values ?? {}),
+  };
+  localStorage.setItem("gameConfig", JSON.stringify(form));
+  return {
+    form,
+    rule: {
+      damageIfCorrect: {
+        mean: form.damage_if_correct_mean,
+        stdDev: form.damage_if_correct_std_dev,
+      },
+      damageIfIncorrect: {
+        mean: form.damage_if_incorrect_mean,
+        stdDev: form.damage_if_incorrect_std_dev,
+      },
+      stock: form.stock_enabled
+        ? {
+          count: form.stock_count,
+          canSteal: form.stock_steal,
+        }
+        : undefined,
+    },
+    names: form.names ?? [
+      "宇宙のモフモフ探検隊",
+      "カエルの革命家たち",
+      "時速5kmのスナイパー",
+      "パンダの逆襲",
+      "未確認飛行ニンジン",
+      "秘密結社クワガタムシ",
+    ],
+  };
 }
 
 export function RuleForm(props: {
   onSubmit: (rule: Rule, names: string[]) => void;
 }) {
-  const gameConfig: GameConfig = (() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("gameConfig") ?? "");
-      return stored;
-    } catch {
-      localStorage.setItem("gameConfig", JSON.stringify(conf));
-      return conf;
-    }
-  })();
+  const { form } = saveAndGetGameRules();
   return (
     <form
       onSubmit={(event) => {
@@ -55,37 +84,32 @@ export function RuleForm(props: {
           return parseFloat(str);
         }
         function getCheckboxValue(name: string): boolean {
-          const str = getValue(name);
-          return str === "on";
+          const input = document.querySelector(`input[name=${name}]`) as HTMLInputElement;
+          return input.checked;
         }
-        const names = getValue("names")
-          .split("\n")
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-        const rule: Rule = {
-          damageIfCorrect: {
-            mean: getFloatValue("damage_if_correct_mean") / 100,
-            stdDev: getFloatValue("damage_if_correct_std_dev") / 100,
-          },
-          damageIfIncorrect: {
-            mean: getFloatValue("damage_if_incorrect_mean") / 100,
-            stdDev: getFloatValue("damage_if_incorrect_std_dev") / 100,
-          },
-          stock: getCheckboxValue("stock_enabled")
-            ? {
-              count: getFloatValue("stock_count"),
-              canSteal: getCheckboxValue("stock_steal"),
-            }
-            : undefined,
-        };
-        localStorage.setItem("gameConfig", JSON.stringify({ rule, names }));
+        const { rule, names } = saveAndGetGameRules({
+          names: getValue("names")
+            .split("\n")
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0),
+          damage_if_correct_mean: getFloatValue("damage_if_correct_mean") / 100,
+          damage_if_correct_std_dev:
+            getFloatValue("damage_if_correct_std_dev") / 100,
+          damage_if_incorrect_mean:
+            getFloatValue("damage_if_incorrect_mean") / 100,
+          damage_if_incorrect_std_dev:
+            getFloatValue("damage_if_incorrect_std_dev") / 100,
+          stock_enabled: getCheckboxValue("stock_enabled"),
+          stock_count: getFloatValue("stock_count"),
+          stock_steal: getCheckboxValue("stock_steal"),
+        });
         props.onSubmit(rule, names);
       }}
     >
       <div>
         <label>
           チーム名:
-          <textarea name="names" value={gameConfig.names.join("\n")}></textarea>
+          <textarea name="names" value={form.names.join("\n")}></textarea>
         </label>
       </div>
       <div>
@@ -94,7 +118,7 @@ export function RuleForm(props: {
           <input
             type="number"
             name="damage_if_correct_mean"
-            value={`${gameConfig.rule.damageIfCorrect.mean * 100}`}
+            value={`${Math.floor(form.damage_if_correct_mean * 100)}`}
             min="0"
             max="100"
             required
@@ -108,7 +132,7 @@ export function RuleForm(props: {
           <input
             type="number"
             name="damage_if_correct_std_dev"
-            value={`${gameConfig.rule.damageIfCorrect.stdDev * 100}`}
+            value={`${Math.floor(form.damage_if_correct_std_dev * 100)}`}
             min="0"
             max="100"
             required
@@ -122,7 +146,7 @@ export function RuleForm(props: {
           <input
             type="number"
             name="damage_if_incorrect_mean"
-            value={`${gameConfig.rule.damageIfIncorrect.mean * 100}`}
+            value={`${Math.floor(form.damage_if_incorrect_mean * 100)}`}
             min="0"
             max="100"
             required
@@ -136,7 +160,7 @@ export function RuleForm(props: {
           <input
             type="number"
             name="damage_if_incorrect_std_dev"
-            value={`${gameConfig.rule.damageIfIncorrect.stdDev * 100}`}
+            value={`${Math.floor(form.damage_if_incorrect_std_dev * 100)}`}
             min="0"
             max="100"
             required
@@ -150,7 +174,7 @@ export function RuleForm(props: {
           <input
             type="checkbox"
             name="stock_enabled"
-            value={`${gameConfig.rule.stock ? "on" : ""}`}
+            checked={form.stock_enabled}
           />
         </label>
       </div>
@@ -160,7 +184,7 @@ export function RuleForm(props: {
           <input
             type="number"
             name="stock_count"
-            value={`${gameConfig.rule.stock?.count ?? "5"}`}
+            value={`${form.stock_count.toString() ?? "5"}`}
             min="1"
             max="20"
             required
@@ -174,7 +198,7 @@ export function RuleForm(props: {
           <input
             type="checkbox"
             name="stock_steal"
-            value={`${gameConfig.rule.stock?.canSteal ? "on" : ""}`}
+            checked={form.stock_steal}
           />
         </label>
       </div>
