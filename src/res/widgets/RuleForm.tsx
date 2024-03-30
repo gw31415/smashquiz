@@ -1,3 +1,4 @@
+import { createUniqueId, onMount } from "solid-js";
 import type { Rule } from "../../types";
 
 interface FormValues {
@@ -18,6 +19,14 @@ function saveAndGetGameRules(values: FormValues | undefined = undefined): {
 } {
   const form: FormValues = {
     ...{
+      names: [
+        "宇宙のモフモフ探検隊",
+        "カエルの革命家たち",
+        "時速5kmのスナイパー",
+        "パンダの逆襲",
+        "未確認飛行ニンジン",
+        "秘密結社クワガタムシ",
+      ],
       damage_if_correct_mean: 0.1,
       damage_if_correct_std_dev: 0.05,
       damage_if_incorrect_mean: 0.2,
@@ -56,14 +65,7 @@ function saveAndGetGameRules(values: FormValues | undefined = undefined): {
         }
         : undefined,
     },
-    names: form.names ?? [
-      "宇宙のモフモフ探検隊",
-      "カエルの革命家たち",
-      "時速5kmのスナイパー",
-      "パンダの逆襲",
-      "未確認飛行ニンジン",
-      "秘密結社クワガタムシ",
-    ],
+    names: form.names,
   };
 }
 
@@ -71,8 +73,30 @@ export function RuleForm(props: {
   onSubmit: (rule: Rule, names: string[]) => void;
 }) {
   const { form } = saveAndGetGameRules();
+  const formid = createUniqueId();
+  const stockruleId = createUniqueId();
+
+  onMount(() => {
+    document
+      .querySelectorAll(`#${formid} input[name=game_mode]`)
+      .forEach((input) => {
+        function update() {
+          const stockrule = document.getElementById(
+            stockruleId,
+          ) as HTMLFieldSetElement;
+          if ((input as HTMLInputElement).value === "stock") {
+            stockrule.disabled = false;
+          } else {
+            stockrule.disabled = true;
+          }
+        }
+        update();
+        input.addEventListener("change", update);
+      });
+  });
   return (
     <form
+      id={formid}
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
@@ -84,7 +108,9 @@ export function RuleForm(props: {
           return parseFloat(str);
         }
         function getCheckboxValue(name: string): boolean {
-          const input = document.querySelector(`input[name=${name}]`) as HTMLInputElement;
+          const input = document.querySelector(
+            `#${formid} input[name=${name}]`,
+          ) as HTMLInputElement;
           return input.checked;
         }
         const { rule, names } = saveAndGetGameRules({
@@ -99,7 +125,7 @@ export function RuleForm(props: {
             getFloatValue("damage_if_incorrect_mean") / 100,
           damage_if_incorrect_std_dev:
             getFloatValue("damage_if_incorrect_std_dev") / 100,
-          stock_enabled: getCheckboxValue("stock_enabled"),
+          stock_enabled: getValue("game_mode") === "stock",
           stock_count: getFloatValue("stock_count"),
           stock_steal: getCheckboxValue("stock_steal"),
         });
@@ -112,96 +138,115 @@ export function RuleForm(props: {
           <textarea name="names" value={form.names.join("\n")}></textarea>
         </label>
       </div>
-      <div>
-        <label>
-          成功ダメージの中央値(%):
-          <input
-            type="number"
-            name="damage_if_correct_mean"
-            value={`${Math.floor(form.damage_if_correct_mean * 100)}`}
-            min="0"
-            max="100"
-            required
-            step="1"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          成功ダメージの標準偏差(%):
-          <input
-            type="number"
-            name="damage_if_correct_std_dev"
-            value={`${Math.floor(form.damage_if_correct_std_dev * 100)}`}
-            min="0"
-            max="100"
-            required
-            step="1"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          失敗ダメージの中央値(%):
-          <input
-            type="number"
-            name="damage_if_incorrect_mean"
-            value={`${Math.floor(form.damage_if_incorrect_mean * 100)}`}
-            min="0"
-            max="100"
-            required
-            step="1"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          失敗ダメージの標準偏差(%):
-          <input
-            type="number"
-            name="damage_if_incorrect_std_dev"
-            value={`${Math.floor(form.damage_if_incorrect_std_dev * 100)}`}
-            min="0"
-            max="100"
-            required
-            step="1"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          ストック制:
-          <input
-            type="checkbox"
-            name="stock_enabled"
-            checked={form.stock_enabled}
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          ストック数:
-          <input
-            type="number"
-            name="stock_count"
-            value={`${form.stock_count.toString() ?? "5"}`}
-            min="1"
-            max="20"
-            required
-            step="1"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          スマッシュ成功時にストックを奪う:
-          <input
-            type="checkbox"
-            name="stock_steal"
-            checked={form.stock_steal}
-          />
-        </label>
-      </div>
+      <fieldset>
+        <div>
+          <label>
+            成功ダメージの中央値(%):
+            <input
+              type="number"
+              name="damage_if_correct_mean"
+              value={`${Math.floor(form.damage_if_correct_mean * 100)}`}
+              min="0"
+              max="100"
+              required
+              step="1"
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            成功ダメージの標準偏差(%):
+            <input
+              type="number"
+              name="damage_if_correct_std_dev"
+              value={`${Math.floor(form.damage_if_correct_std_dev * 100)}`}
+              min="0"
+              max="100"
+              required
+              step="1"
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            失敗ダメージの中央値(%):
+            <input
+              type="number"
+              name="damage_if_incorrect_mean"
+              value={`${Math.floor(form.damage_if_incorrect_mean * 100)}`}
+              min="0"
+              max="100"
+              required
+              step="1"
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            失敗ダメージの標準偏差(%):
+            <input
+              type="number"
+              name="damage_if_incorrect_std_dev"
+              value={`${Math.floor(form.damage_if_incorrect_std_dev * 100)}`}
+              min="0"
+              max="100"
+              required
+              step="1"
+            />
+          </label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <div>
+          <label>
+            <input
+              type="radio"
+              name="game_mode"
+              checked={!form.stock_enabled}
+              value="point"
+            />
+            ポイント制
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="radio"
+              name="game_mode"
+              checked={form.stock_enabled}
+              value="stock"
+            />
+            ストック制
+          </label>
+        </div>
+        <fieldset id={stockruleId}>
+          <legend>ストック制ルール設定</legend>
+          <div>
+            <label>
+              ストック数:
+              <input
+                type="number"
+                name="stock_count"
+                value={`${form.stock_count.toString() ?? "5"}`}
+                min="1"
+                max="20"
+                required
+                step="1"
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              スマッシュ成功時にストックを加算する:
+              <input
+                type="checkbox"
+                name="stock_steal"
+                checked={form.stock_steal}
+              />
+            </label>
+          </div>
+        </fieldset>
+      </fieldset>
       <button type="submit">開始</button>
     </form>
   );
