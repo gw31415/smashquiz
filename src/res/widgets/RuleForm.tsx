@@ -227,7 +227,7 @@ export function RuleForm(props: {
               <input
                 type="number"
                 name="stock_count"
-                value={`${form.stock_count.toString() ?? "5"}`}
+                value={`${form.stock_count?.toString() ?? "5"}`}
                 min="1"
                 max="20"
                 required
