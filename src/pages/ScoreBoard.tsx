@@ -131,7 +131,7 @@ function TeamRow(props: {
       class={css(
         `
         font-family: "RocknRoll One";
-        font-size: 4rem;
+        font-size: 6rem;
         border-top: 1px solid white;
         border-bottom: 1px solid white;
         background: linear-gradient(to bottom right, ${props.color} 30%, transparent);
