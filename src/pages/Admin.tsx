@@ -2,11 +2,11 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { css } from "@emotion/css";
 import { createSignal, For, onMount, Show } from "solid-js";
 
-import type { Game, Message, Rule } from "../../types";
+import type { Game, Message, Rule } from "../types";
 import { appWindow, WebviewWindow } from "@tauri-apps/api/window";
-import { Submit } from "../../res/widgets/Submit";
-import { RuleForm } from "../../res/widgets/RuleForm";
-import { SelectionTile } from "../../res/widgets/SelectionTile";
+import { Submit } from "../res/widgets/Submit";
+import { RuleForm } from "../res/widgets/RuleForm";
+import { SelectionTile } from "../res/widgets/SelectionTile";
 
 export default function Admin() {
   const [game, setGame] = createSignal<Game | null>(null);
@@ -101,11 +101,13 @@ export default function Admin() {
           <button onClick={undo}>戻る</button>
           <button onClick={redo}>進む</button>
           <input
-            type="range"
+            type="number"
             min="5"
             max="30"
-            onChange={(e) => {
-              const size = parseInt(e.target.value);
+            placeholder="文字サイズ"
+            required
+            onInput={(e) => {
+              const size = Math.max(Math.min(parseInt(e.target.value), 30), 5);
               invoke("ui_update", {
                 uiConfig: {
                   fontSize: size,
