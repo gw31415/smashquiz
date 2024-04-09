@@ -40,21 +40,34 @@ struct Damage {
     pub mean: f64,
     /// バラつきの標準偏差
     pub std_dev: f64,
+    /// 最大値
+    pub max: Option<f64>,
+    /// 最小値
+    pub min: Option<f64>,
 }
 
 impl Add<f64> for &Damage {
     type Output = f64;
 
-    fn add(self, rhs: f64) -> Self::Output {
-        let mut distr = Normal::new(self.mean, self.std_dev)
-            .unwrap()
-            .sample(&mut rand::thread_rng());
-        if distr > self.mean {
-            distr = self.mean;
-        } else if distr < 0.0 {
-            distr = 0.0;
-        }
-        distr + rhs
+    fn add(self, hp: f64) -> Self::Output {
+        let damage = 'dm: {
+            let damage = Normal::new(self.mean, self.std_dev)
+                .unwrap()
+                .sample(&mut rand::thread_rng());
+
+            if let Some(max) = self.max {
+                if damage > max {
+                    break 'dm max;
+                }
+            }
+            if let Some(min) = self.min {
+                if damage < min {
+                    break 'dm min;
+                }
+            }
+            damage
+        };
+        hp + damage
     }
 }
 
@@ -74,10 +87,14 @@ impl Default for Rule {
             damage_if_correct: Damage {
                 mean: 0.1,
                 std_dev: 0.05,
+                max: Some(0.2),
+                min: Some(0.0),
             },
             damage_if_incorrect: Damage {
                 mean: 0.2,
                 std_dev: 0.1,
+                max: Some(0.4),
+                min: Some(0.0),
             },
             stock: None,
         }

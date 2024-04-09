@@ -17,18 +17,19 @@ export interface Game {
   states: Teams;
 }
 
+interface Damage {
+  mean: number;
+  stdDev: number;
+  max: number | null;
+  min: number | null;
+}
+
 export interface Rule {
   [key: string]: any;
   stock?: {
     count: number;
     canSteal: boolean;
   };
-  damageIfCorrect: {
-    mean: number;
-    stdDev: number;
-  };
-  damageIfIncorrect: {
-    mean: number;
-    stdDev: number;
-  };
+  damageIfCorrect: Damage;
+  damageIfIncorrect: Damage;
 }
