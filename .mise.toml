@@ -1,2 +1,3 @@
 [tools]
 "npm:@biomejs/biome" = "latest"
+pnpm = "latest"
