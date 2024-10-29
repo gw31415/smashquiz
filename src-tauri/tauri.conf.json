@@ -1,52 +1,49 @@
 {
-  "build": {
-    "beforeDevCommand": "pnpm run dev",
-    "beforeBuildCommand": "pnpm run build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist"
-  },
-  "package": {
-    "productName": "SmashQuiz",
-    "version": "0.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": true
-    },
-    "windows": [
-      {
-        "label": "view",
-        "fullscreen": false,
-        "resizable": true,
-        "width": 1280,
-        "height": 720,
-        "title": "SmashQuiz",
-        "url": "/view",
-        "closable": false
-      },
-      {
-        "fullscreen": false,
-        "resizable": false,
-        "width": 800,
-        "height": 600,
-        "title": "SmashQuiz Admin",
-        "url": "/"
-      }
-    ],
-    "security": {
-      "csp": null
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "dev.amas.smashquiz",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    }
-  }
+	"$schema": "https://schema.tauri.app/config/2",
+	"productName": "smashquiz",
+	"version": "0.1.0",
+	"identifier": "dev.amas.smashquiz",
+	"build": {
+		"beforeDevCommand": "pnpm dev",
+		"devUrl": "http://localhost:1420",
+		"beforeBuildCommand": "pnpm build",
+		"frontendDist": "../dist"
+	},
+	"app": {
+		"withGlobalTauri": true,
+		"windows": [
+			{
+				"label": "view",
+				"fullscreen": false,
+				"resizable": true,
+				"width": 1280,
+				"height": 720,
+				"title": "SmashQuiz",
+				"url": "/view",
+				"closable": false
+			},
+			{
+				"fullscreen": false,
+				"resizable": false,
+				"width": 800,
+				"height": 600,
+				"title": "SmashQuiz Admin",
+				"url": "/"
+			}
+		],
+		"security": {
+			"csp": null
+		}
+	},
+	"bundle": {
+		"active": true,
+		"targets": "all",
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.icns",
+			"icons/icon.ico"
+		]
+	}
 }

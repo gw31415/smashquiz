@@ -1,13 +1,18 @@
 import { css } from "@emotion/css";
 
-export function Submit(props: { correct: boolean; disabled: boolean; onClick: () => void }) {
+export function Submit(props: {
+	correct: boolean;
+	disabled: boolean;
+	onClick: () => void;
+}) {
 	return (
 		<button
+			type="button"
 			class={css({
 				fontSize: 30,
 				color: "white",
 				backgroundColor: props.correct ? "#F44336" : "#283593",
-				[":disabled"]: {
+				":disabled": {
 					backgroundColor: "#E0E0E0",
 					color: "#757575",
 				},
@@ -19,6 +24,3 @@ export function Submit(props: { correct: boolean; disabled: boolean; onClick: ()
 		</button>
 	);
 }
-
-
-

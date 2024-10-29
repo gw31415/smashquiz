@@ -1,14 +1,14 @@
 import { css } from "@emotion/css";
 
 export function SelectionTile(props: {
-  mode: "damage" | "smash" | "dead";
-  onClick: () => void;
-  isSelected: boolean;
+	mode: "damage" | "smash" | "dead";
+	onClick: () => void;
+	isSelected: boolean;
 }) {
-  return (
-    <div
-      class={css(
-        css`
+	return (
+		<div
+			class={css(
+				css`
           display: flex;
           align-items: center;
           justify-content: center;
@@ -34,21 +34,21 @@ export function SelectionTile(props: {
             }
           }
         `,
-        props.mode !== "dead"
-          ? "cursor: pointer"
-          : css`
+				props.mode !== "dead"
+					? "cursor: pointer"
+					: css`
               &:hover {
                 opacity: 0.8;
               }
             `,
-      )}
-      classList={{
-        selected: props.isSelected,
-        [props.mode]: true,
-      }}
-      onClick={props.onClick}
-    >
-      {props.mode.toUpperCase()}
-    </div>
-  );
+			)}
+			classList={{
+				selected: props.isSelected,
+				[props.mode]: true,
+			}}
+			onClick={props.onClick}
+		>
+			{props.mode.toUpperCase()}
+		</div>
+	);
 }

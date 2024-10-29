@@ -6,7 +6,7 @@ use std::{borrow::BorrowMut, collections::HashMap, ops::Add, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
 use smashquiz::GameManager;
-use tauri::{Manager as _, State};
+use tauri::{Emitter as _, Manager as _, State};
 
 pub mod smashquiz;
 
@@ -203,15 +203,6 @@ struct Message {
     event: Event,
 }
 
-macro_rules! ok {
-    ($app_handle:expr, $e:expr) => {{
-        $app_handle
-            .emit_all("message", $e.clone())
-            .or(Err("Failed to send message".to_string()))?;
-        Ok($e)
-    }};
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 struct LogRecord {
     /// ゲームの状態
@@ -294,7 +285,10 @@ fn reset(
         update: HashMap::new(),
         event: Event::Reset,
     };
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// 強制的に同期する
@@ -309,7 +303,10 @@ fn sync(
         update: manager.teams.clone(),
         event: Event::Sync(manager.rule.clone()),
     };
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// UIの設定を更新する
@@ -319,7 +316,10 @@ fn ui_update(app_handle: tauri::AppHandle, ui_config: UiConfig) -> Result<Messag
         update: HashMap::new(),
         event: Event::UiUpdate(ui_config),
     };
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// 状態を一つ戻す
@@ -338,7 +338,10 @@ fn undo(
         update: teams,
         event: Event::Sync(rule),
     };
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// 状態を一つ進める
@@ -357,7 +360,10 @@ fn redo(
         update: teams,
         event: Event::Sync(rule),
     };
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// ゲームを初期化する
@@ -385,7 +391,10 @@ fn initialize(
         .unwrap()
         .borrow_mut()
         .replace(Log::new(&game_manager));
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// ダメージを与える
@@ -415,7 +424,10 @@ fn damage(
     } else {
         log.lock().unwrap().borrow_mut().replace(Log::new(manager));
     }
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 /// スマッシュ攻撃を行う
@@ -445,7 +457,10 @@ fn smash(
     } else {
         log.lock().unwrap().borrow_mut().replace(Log::new(manager));
     }
-    ok!(app_handle, msg)
+    app_handle
+        .emit("message", msg.clone())
+        .and(Ok(msg))
+        .or(Err("Failed to emit message".to_string()))
 }
 
 fn main() {

@@ -1,2 +1,2 @@
 [tools]
-pnpm = "8.15.6"
+"npm:@biomejs/biome" = "latest"

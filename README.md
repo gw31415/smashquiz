@@ -1,6 +1,6 @@
-# SmashQuiz
+# Tauri + Vanilla TS
 
-This template is created based on Tauri + Solid + Typescript.
+This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
 
 ## Recommended IDE Setup
 
